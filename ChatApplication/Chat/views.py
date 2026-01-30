@@ -6,11 +6,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
-from .models import User, Conversation, ConversationMember, Message
+from .models import User, Chat, ChatMember, Message
 from .serializers import (
     UserSerializer,
-    ConversationSerializer,
-    ConversationMemberSerializer,
+    ChatSerializer,
+    ChatMemberSerializer,
     MessageSerializer,
 )
 
@@ -31,41 +31,97 @@ class UserDetailView(generics.RetrieveAPIView):
 
 
 # -----------------------------
-# Conversation Views
+# Chat List Views
 # -----------------------------
-class ConversationListView(generics.ListCreateAPIView):
-    queryset = Conversation.objects.all()
-    serializer_class = ConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class ChatListViewByUser(generics.ListAPIView):
+    # queryset = Chat.objects.all()
+    # serializer_class = ChatSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        # chat = get_object_or_404(User,username=username)
+        print(request)
+        # print(username)
+        # user_id = User.objects.filter(username=username).values_list('id')
+        # chat = Message.objects.filter(
+        #     message_by=user_id
+        # ).values_list("chat_name")
 
 
-class ConversationDetailView(generics.RetrieveAPIView):
-    queryset = Conversation.objects.all()
-    serializer_class = ConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+        # # print(chat)
+        # serializer = ChatSerializer(chat, many=True)
 
+        # return Response(
+        #     {
+        #         "chat list":serializer.data
+        #         }
+        #     )
+        chat_name_id = ChatMember.objects.filter(
+            chat_member_username=user_id
+        ).values_list("chat_name_id")
+        print(chat_name_id)
+
+        chat = Chat.objects.filter(
+            id = chat_name_id[0][0]
+        ).values("chat_name")
+
+
+        print(chat)
+        return Response(chat[0])
+        # serializer = ChatSerializer(chat, many=True)
+
+        # return Response(serializer.data)
 
 # -----------------------------
-# Conversation Members Views
+# Chat Views
 # -----------------------------
-class ConversationMemberListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+class ChatViewByUser(generics.ListAPIView):
+    # queryset = Chat.objects.all()
+    # serializer_class = ChatSerializer
+    # permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        members = conversation.members.all()
-        serializer = ConversationMemberSerializer(members, many=True)
+    def get(self, request, user_id, chat_id):
+        # chat = get_object_or_404(User,username=username)
+
+        messages = Message.objects.filter(
+            message_by=user_id,
+            chat_name = chat_id
+        ).values("message","message_by","created_at")
+        print(messages)
+        serializer = MessageSerializer(messages[0])
+        # return Response(messages[0])
         return Response(serializer.data)
 
-    def post(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        user_id = request.data.get("user_id")
-        user = get_object_or_404(User, id=user_id)
-        member, created = ConversationMember.objects.get_or_create(
-            conversation=conversation, user=user
-        )
-        serializer = ConversationMemberSerializer(member)
+
+
+
+class ChatDetailView(generics.RetrieveAPIView):
+    queryset = Chat.objects.all()
+    serializer_class = ChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+# -----------------------------
+# Chat Members Views
+# -----------------------------
+class ChatMemberListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, chat_id):
+        chat = get_object_or_404(Chat, id=chat_id)
+        members = chat.members.all()
+        serializer = ChatMemberSerializer(members, many=True)
         return Response(serializer.data)
+
+    # def post(self, request, chat_id):
+    #     chat = get_object_or_404(Chat, id=chat_id)
+    #     user_id = request.data.get("user_id")
+    #     user = get_object_or_404(User, id=user_id)
+    #     member, created = ChatMember.objects.get_or_create(
+    #         chat=chat, user=user
+    #     )
+    #     serializer = ChatMemberSerializer(member)
+    #     return Response(serializer.data)
 
 
 # -----------------------------
@@ -74,19 +130,19 @@ class ConversationMemberListView(APIView):
 class MessageListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        messages = conversation.messages.order_by("-created_at")[:50]  # last 50 messages
+    def get(self, request, chat_id):
+        chat = get_object_or_404(Chat, id=chat_id)
+        messages = chat.messages.order_by("-created_at")[:50]  # last 50 messages
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
-    def post(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        sender = request.user
-        content = request.data.get("content")
+    # def post(self, request, chat_id):
+    #     chat = get_object_or_404(Chat, id=chat_id)
+    #     sender = request.user
+    #     content = request.data.get("content")
 
-        message = Message.objects.create(
-            conversation=conversation, sender=sender, content=content
-        )
-        serializer = MessageSerializer(message)
-        return Response(serializer.data)
+    #     message = Message.objects.create(
+    #         chat=chat, sender=sender, content=content
+    #     )
+    #     serializer = MessageSerializer(message)
+    #     return Response(serializer.data)

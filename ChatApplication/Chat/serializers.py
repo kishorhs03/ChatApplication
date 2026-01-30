@@ -1,26 +1,28 @@
 from rest_framework import serializers
-from .models import User, Conversation, ConversationMember, Message
+from .models import User, Chat, ChatMember, Message
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "created_at"]
+        fields = ["id", "username", "password", "email", "created_at"]
 
-class ConversationSerializer(serializers.ModelSerializer):
+class ChatSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Conversation
-        fields = ["id", "name", "is_group", "created_at"]
+        model = Chat
+        fields = ["id", "chat_name", "is_group", "created_at"]
 
-class ConversationMemberSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+class ChatMemberSerializer(serializers.ModelSerializer):
+    chat_member_username = UserSerializer(read_only=True)
+    chat_name = ChatSerializer(read_only=True)
 
     class Meta:
-        model = ConversationMember
-        fields = ["id", "conversation", "user", "joined_at"]
+        model = ChatMember
+        fields = ["id", "chat_name", "chat_member_username"]
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
+    message_by = UserSerializer(read_only=True)
+    chat_name = ChatSerializer(read_only=True)
 
     class Meta:
         model = Message
-        fields = ["id", "conversation", "sender", "content", "created_at", "is_read"]
+        fields = ["id", "chat_name", "message_by", "message", "created_at"]
