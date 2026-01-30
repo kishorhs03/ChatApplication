@@ -1,12 +1,15 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+# from django.contrib.auth.models import AbstractUser
 
 # -----------------------------
 # Users Table
 # -----------------------------
-class User(AbstractUser):
+class User(models.Model):
     # AbstractUser already provides: username, password, email, first_name, last_name
     # You can extend with custom fields if needed
+    username = models.CharField(max_length=50, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)   # store hashed passwords, not plain text!
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -16,50 +19,65 @@ class User(AbstractUser):
 # -----------------------------
 # Conversations Table
 # -----------------------------
-class Conversation(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)  # For group chats
+class Chat(models.Model):
+    chat_name = models.CharField(max_length=100, blank=True, null=True)  # For group chats
     is_group = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    # message_id = models.CharField(max_length=100, blank=False)
+    # message_id = models.ForeignKey(
+    #     Message, on_delete=models.CASCADE, related_name="messages"
+    # )
 
     def __str__(self):
-        return self.name if self.name else f"Conversation {self.id}"
+        return self.chat_name if self.chat_name else f"Chat {self.id}"
 
-
-# -----------------------------
-# Conversation Members Table
-# -----------------------------
-class ConversationMember(models.Model):
-    conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="members"
+class ChatMember(models.Model):
+    chat_name = models.ForeignKey(
+        Chat, on_delete=models.CASCADE, related_name="members"
     )
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="conversations"
+    chat_member_username = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="chat_memberships"
     )
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("conversation", "user")  # Prevent duplicate membership
-
-    def __str__(self):
-        return f"{self.user.username} in {self.conversation}"
 
 
 # -----------------------------
 # Messages Table
 # -----------------------------
 class Message(models.Model):
-    conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="messages"
-    )
-    sender = models.ForeignKey(
+    
+    message_by = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="sent_messages"
     )
-    content = models.TextField()
+    chat_name = models.ForeignKey(
+        Chat, on_delete=models.CASCADE, related_name="messages"
+    )
+    message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
+    # is_read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Message {self.id} from {self.sender.username}"
+    
+
+# -----------------------------
+# Conversation Members Table
+# -----------------------------
+# class ConversationMember(models.Model):
+#     conversation = models.ForeignKey(
+#         Conversation, on_delete=models.CASCADE, related_name="members"
+#     )
+#     user = models.ForeignKey(
+#         User, on_delete=models.CASCADE, related_name="conversations"
+#     )
+#     joined_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         unique_together = ("conversation", "user")  # Prevent duplicate membership
+
+#     def __str__(self):
+#         return f"{self.user.username} in {self.conversation}"
+
+
     
 '''
     Why This Structure Works
